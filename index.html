@@ -1,0 +1,46 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>聊天室</title>
+		<link href="bootstrap/bootstrap.min.css" rel="stylesheet" type="text/css">
+		<script src="bootstrap/jquery.js"></script>
+		<script src="bootstrap/bootstrap.min.js"></script>
+		<script src="js/main.js"></script>
+		
+		
+	</head>
+	<body>
+		<div id="container">
+			<div class="head" style="height:100px;">
+				<div class="col-md-8 col-md-offset-2" style="height:100px;background-color:#123456;">
+					<div class="col-md-4" style="padding:10px 0"><img src="images/logo.png" style="height:80px"></div>
+					<div class="col-md-4 pull-right">
+						<p class="col-md-9 pull-right" style="margin:20px 0"><a class="btn btn-primary" >登录</a> <a class="btn btn-default">注册</a></p>
+					</div>
+				</div>
+			</div>
+			<div style="height:20px"></div>
+			<div class="main">
+				<div class="col-md-8 col-md-offset-2">
+					<div class="talk-room col-md-8" style="border-radius:10px;border:2px solid #ccc;height:620px">
+						<div class="show-talk" style="border-radius:5px;height:400px;border:1px solid #ccc;margin-top:20px">
+						</div>
+						<div class="write-talk" style="height:120px;">
+							<div style="height:20px"></div>
+							<textarea id='t1' class="form-control" style="height:100%;"></textarea>
+						</div>
+						<div style="clear:both"></div>
+						<div class="talk-btn pull-right" style="margin-top:30px">
+							<a class="btn btn-primary" id="send">发送</a>
+							<a class="btn btn-default" id="reset">重置</a>
+						</div>
+						
+					</div>
+					<div class="users col-md-4" style="border-radius:10px;border:2px solid #ccc;height:620px"></div>
+				</div>
+			</div>
+			
+			<div id="footer" style="height:100px;clear:both"></div>
+		</div>
+	</body>
+</html>
