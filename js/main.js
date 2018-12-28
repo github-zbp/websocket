@@ -3,13 +3,19 @@ $(function(){
 	var login_url="/login.php";
 	var register_url="/register.php";
 	var logout_url="/logout.php";
+	var history_url="/history.php";
+	var more_history_url="/more_history.php";
+	var logined_user_url="/logined_user.php";
 	var login_btn=$("#login");
 	var register_btn=$("#register");
 	var reg_btn=$("#reg_btn");
 	var log_btn=$("#login_btn");
+	var history_btn=$(".more-history");
 	var ui=$(".user-info");
 	var rl=$(".rl");
 	var timer=null;
+	var beginTime=0;
+	var diffTime=0;
 	
 	// $(".show-talk").scrollTop(100);
 	
@@ -26,6 +32,27 @@ $(function(){
 		console.log(userInfo);
 	},"json");
 	
+	//初始化获取最新的100条消息记录
+	$.get(history_url,{},function(d){
+		if(!d.errno){
+			var msgs=d.data;
+			$.each(msgs,function(i,v){
+				showMsg(v);
+			});
+		}
+	},"json");
+	
+	//初始化获取所有在线用户
+	$.get(logined_user_url,{},function(d){
+		if(!d.errno){
+			var users=d.data;
+			$.each(users,function(i,v){
+				console.log(v);
+				showUser(v);
+			});
+		}
+	},"json");
+	
 	//登陆弹框
 	login_btn.click(function(){
 		$("#tab_login").trigger("click");
@@ -34,6 +61,31 @@ $(function(){
 	register_btn.click(function(){
 		$("#tab_reg").trigger("click");
 		$("#modal").modal();
+	});
+	
+	//点击获取更多历史记录
+	history_btn.click(function(){
+		var rows=50;   //一次获取50条
+		var page=$(this).attr("page");
+		var _this=$(this);
+		$.get(more_history_url,{"page":page,"rows":rows},function(d){
+			if( page < 0 ){
+				//直接在对话框中显示历史记录
+				html="";
+				$.each(d.data,function(i,v){
+					html+=createTalkHtml(v);
+				});
+				$(".talk-ul").html(html);
+				_this.attr("page",1);
+			}else{
+				if(d.errno){
+					alert(d.errmsg);
+				}else{
+					$("#more-history-modal").html(d.data).modal();
+					
+				}
+			}
+		},"json");
 	});
 	
 	//登陆 
@@ -61,6 +113,7 @@ $(function(){
 				};
 				
 				sendMsg(data);
+				location.href=location.href;
 			}
 		},"json");
 	});
@@ -69,6 +122,14 @@ $(function(){
 	$("#logout").click(function(){
 		$.post(logout_url,{},function(d){
 			if(!d.errno){
+				var logout_data={
+					"action":"logout",
+					"user_id":userInfo.id
+				};
+				
+				//发送消息说自己退出了
+				sendMsg(logout_data);
+				
 				userInfo={};
 				rl.show();
 				ui.hide();
@@ -139,7 +200,7 @@ $(function(){
 		ws.close();
 		console.log(ws);
 	});
-	
+
 	
 	function fmtDate(timeStamp,type=1) { 
 		var date = new Date();
@@ -174,6 +235,8 @@ $(function(){
 				showUser(data);
 			}else if(data.action == "talk"){
 				showMsg(data);
+			}else if(data.action == "logout"){
+				dropUser(data);
 			}
 			
 		});
@@ -204,16 +267,7 @@ $(function(){
 	
 	//显示消息
 	function showMsg(msg){
-		var html=""
-		if(msg.user_id == userInfo.id){
-			html+='<li class="talk-li talk-li-right">';
-		}else{
-			html+='<li class="talk-li">';
-		}
-		
-		html+='<div class="time"><span >'+ fmtDate(msg.inputtime) + '</span>&nbsp;&nbsp;&nbsp;&nbsp;<span>'+ msg.name +'</span></div>';
-		html+='<div class="content"><div>'+ msg.content +'</div></div>';
-		html+='</li>';
+		var html=createTalkHtml(msg);
 		
 		$(".talk-ul").append(html);
 		
@@ -221,21 +275,19 @@ $(function(){
 		$(".talk-li").each(function(){
 			ul_height+=$(this).outerHeight(true);
 		});
-		console.log(ul_height);
+		
 		$(".show-talk").scrollTop(ul_height);
 	}
 	
 	//显示用户
 	function showUser(user){
-		// <div class="col-md-12 user" >
-			// <div class="user-head">
-				// <img src="/images/default.png" >
-			// </div>
-			// <div class="user-name">
-				// <div class="name" >用&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;户 : <span>jqsf</span></div>
-				// <div class="login-time" >登陆时间 : <span>11:54:32</span></div>
-			// </div>
-		// </div>
+		//如果用户列表中已经存在了该用户,那么就不再添加
+		$(".user").each(function(){
+			if($(this).attr("uid") == user.user_id){
+				$(this).remove();
+			}
+		});
+		
 		var html=""
 		html+='<div class="col-md-12 user" uid="'+ user.user_id +'"><div class="user-head">';
 		html+='<img src="/images/'+ user.head +'" >';
@@ -253,6 +305,30 @@ $(function(){
 		// console.log(ul_height);
 		$(".users").scrollTop(height);
 	}
-
+	
+	//右侧用户栏删掉退出的用户
+	function dropUser(user){
+		$(".user").each(function(){
+			if($(this).attr("uid") == user.user_id){
+				$(this).remove();
+			}
+		});
+	}
+	
+	//构建聊天内容的html
+	function createTalkHtml(msg){
+		var html=""
+		if(msg.user_id == userInfo.id){
+			html+='<li class="talk-li talk-li-right">';
+		}else{
+			html+='<li class="talk-li">';
+		}
+		
+		html+='<div class="time"><span >'+ fmtDate(msg.inputtime) + '</span>&nbsp;&nbsp;&nbsp;&nbsp;<span>'+ msg.name +'</span></div>';
+		html+='<div class="content"><div>'+ msg.content +'</div></div>';
+		html+='</li>';
+		
+		return html;
+	}
 });
 	

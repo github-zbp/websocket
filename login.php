@@ -42,6 +42,25 @@
 		die;
 	}
 	
+	
+	#用户信息存入到redis中
+	$r = new \Redis();
+	$r->connect("127.0.0.1",6379);	
+	
+	#写入聊天内容到hash
+	$userInfo=[
+		"user_id"=>$user["id"],
+		"name"=>$user['name'],
+		"head"=>$user["img"],
+		"logintime"=>time()
+	];
+	
+	$r->hmset("login_user:id:".$userInfo["user_id"],$userInfo);
+	
+	#用户登陆顺序写入列表
+	$r->lrem("login_user",$userInfo['user_id']);
+	$r->lpush("login_user",$userInfo["user_id"]);
+	
 	$_SESSION["user"]=$user;
 	
 	$return=[
